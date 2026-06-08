@@ -73,9 +73,10 @@ class TransformerDecoderLayer(nn.Module):
         return tensor if pos is None else tensor + pos
 
     def forward_ffn(self, tgt):
+        tgt_dtype = tgt.dtype
         with torch.amp.autocast(device_type="cuda", enabled=False):
-            tgt2 = self.linear2(self.dropout3(self.activation(self.linear1(tgt))))
-        tgt = tgt + self.dropout4(tgt2)
+            tgt2 = self.linear2(self.dropout3(self.activation(self.linear1(tgt.float()))))
+        tgt = tgt + self.dropout4(tgt2.to(tgt_dtype))
         tgt = self.norm3(tgt)
         return tgt
 

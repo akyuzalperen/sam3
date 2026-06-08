@@ -56,7 +56,9 @@ class Sam3Processor:
 
         state["original_height"] = height
         state["original_width"] = width
-        state["backbone_out"] = self.model.backbone.forward_image(image)
+        autocast_ctx = torch.autocast(device_type="cuda", dtype=torch.bfloat16, enabled=self.device == "cuda")
+        with autocast_ctx:
+            state["backbone_out"] = self.model.backbone.forward_image(image)
         inst_interactivity_en = self.model.inst_interactive_predictor is not None
         if inst_interactivity_en and "sam2_backbone_out" in state["backbone_out"]:
             sam2_backbone_out = state["backbone_out"]["sam2_backbone_out"]
@@ -93,7 +95,9 @@ class Sam3Processor:
             for image in images
         ]
         images = torch.stack(images, dim=0)
-        state["backbone_out"] = self.model.backbone.forward_image(images)
+        autocast_ctx = torch.autocast(device_type="cuda", dtype=torch.bfloat16, enabled=self.device == "cuda")
+        with autocast_ctx:
+            state["backbone_out"] = self.model.backbone.forward_image(images)
         inst_interactivity_en = self.model.inst_interactive_predictor is not None
         if inst_interactivity_en and "sam2_backbone_out" in state["backbone_out"]:
             sam2_backbone_out = state["backbone_out"]["sam2_backbone_out"]
@@ -181,12 +185,14 @@ class Sam3Processor:
 
     @torch.inference_mode()
     def _forward_grounding(self, state: Dict):
-        outputs = self.model.forward_grounding(
-            backbone_out=state["backbone_out"],
-            find_input=self.find_stage,
-            geometric_prompt=state["geometric_prompt"],
-            find_target=None,
-        )
+        autocast_ctx = torch.autocast(device_type="cuda", dtype=torch.bfloat16, enabled=self.device == "cuda")
+        with autocast_ctx:
+            outputs = self.model.forward_grounding(
+                backbone_out=state["backbone_out"],
+                find_input=self.find_stage,
+                geometric_prompt=state["geometric_prompt"],
+                find_target=None,
+            )
 
         out_bbox = outputs["pred_boxes"]
         out_logits = outputs["pred_logits"]
